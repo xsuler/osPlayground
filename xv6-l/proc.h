@@ -52,6 +52,7 @@ struct proc {
   //brand new
   struct proc* next;
   uint priority;
+  uint timepiece;
 };
 
 struct pqueue{

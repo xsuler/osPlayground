@@ -83,6 +83,7 @@ void qpush(struct proc* np)
     ptable.pqueue[np->priority].last->next=np;
     ptable.pqueue[np->priority].last=np;
   }
+  np->timepiece=(1<<(NPROCQ-np->priority-1));
   ptable.count[np->priority]++;
 }
 
