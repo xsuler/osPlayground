@@ -143,8 +143,13 @@ cgaputc(int c)
     pos += 80 - pos%80;
   else if(c == BACKSPACE){
     if(pos > 0) --pos;
-  } else
-    crt[pos++] = (c&0xff) | 0x0700;  // black on white
+  } else{
+    if(c>='0'&&c<='9'){
+      crt[pos++] = (c&0xff) | 0x0b00;  // black on white
+    }else{
+      crt[pos++] = (c&0xff) | 0x0500;  // black on white
+    }
+  }
 
   if(pos < 0 || pos > 25*80)
     panic("pos under/overflow");
