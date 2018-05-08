@@ -380,6 +380,7 @@ scheduler(void)
       }
       if(ptable.count[queue]>0)
       {
+
         p=ptable.pqueue[queue].head;
         ptable.pqueue[queue].head=ptable.pqueue[queue].head->next;
         ptable.count[queue]--;
@@ -411,6 +412,7 @@ scheduler(void)
 // be proc->intena and proc->ncli, but that would
 // break in the few places where a lock is held but
 // there's no process.
+
 void
 sched(void)
 {

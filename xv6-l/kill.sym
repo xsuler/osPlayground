@@ -14,7 +14,7 @@
 00000000 ulib.c
 00000000 printf.c
 00000360 printint
-00000774 digits.1038
+00000774 digits.1040
 00000000 umalloc.c
 00000a20 freep
 00000a24 base
@@ -24,6 +24,7 @@
 00000400 printf
 00000280 memmove
 000002fa mknod
+00000352 trace
 00000170 gets
 00000332 getpid
 00000660 malloc
