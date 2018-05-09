@@ -602,14 +602,14 @@ gettoken(char **ps, char *es, char **q, char **eq)
      46f:	8b 7d 10             	mov    0x10(%ebp),%edi
   s = *ps;
      472:	8b 30                	mov    (%eax),%esi
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s)) //skip whitespace
      474:	39 de                	cmp    %ebx,%esi
      476:	72 0f                	jb     487 <gettoken+0x27>
      478:	eb 25                	jmp    49f <gettoken+0x3f>
      47a:	8d b6 00 00 00 00    	lea    0x0(%esi),%esi
     s++;
      480:	83 c6 01             	add    $0x1,%esi
-  while(s < es && strchr(whitespace, *s))
+  while(s < es && strchr(whitespace, *s)) //skip whitespace
      483:	39 f3                	cmp    %esi,%ebx
      485:	74 18                	je     49f <gettoken+0x3f>
      487:	0f be 06             	movsbl (%esi),%eax
