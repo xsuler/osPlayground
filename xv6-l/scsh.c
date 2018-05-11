@@ -8,6 +8,8 @@
 #define APPLY 3
 
 #define MAXARGS 10
+#define MAXFUNC 10
+#define MAXFUNNAME 10
 #define SYMBOLLENG 10
 
 struct sexp{
@@ -26,13 +28,60 @@ struct list{
   struct sexp *sexps[MAXARGS];
 };
 
+struct func{
+  char name[MAXFUNNAME];
+  char *argv[MAXARGS];
+  int argc;
+  struct sexp *sexp;
+};
+
 int fork1(void);  // Fork but panics on failure.
 void panic(char*);
 struct sexp *parseexp(char*);
+void runexp(struct sexp *exp,struct func *funcs,int *nfunc);
+
+void replaceAtom(struct sexp *exp,char *o,char *d)
+{
+  int i;
+  struct atom *atm;
+  struct list *lst;
+  switch(exp->type)
+  {
+  case ATOM:
+    atm=(struct atom*)exp;
+    if(strcmp(atm->symbol,o)==0)
+      atm->symbol=d;
+    break;
+  case LIST:
+  case APPLY:
+    lst=(struct list*)exp;
+    for(i=0;i<lst->length;i++)
+    {
+      replaceAtom(lst->sexps[i], o, d);
+    }
+    break;
+  }
+}
+
+void
+defunc(struct list *lst,struct func *funcs,int *nfunc)
+{
+  printf(2, "start defun\n");
+  int i;
+  struct func *fn=funcs+*nfunc;
+  struct list *argv=(struct list*)lst->sexps[2];
+  (*nfunc)++;
+  printf(2, "nfunc: %d\n", *nfunc);
+  strcpy(fn->name, ((struct atom*)lst->sexps[1])->symbol);
+  fn->argc=argv->length;
+  fn->sexp=lst->sexps[3];
+  for(i=0;i<fn->argc;i++)
+    replaceAtom(fn->sexp, ((struct atom*)argv->sexps[i])->symbol, fn->argv[i]);
+}
 
 // Execute exp.  Never returns.
 void
-runexp(struct sexp *exp)
+runexp(struct sexp *exp,struct func *funcs,int *nfunc)
 {
 
   int i,bufs=0;
@@ -53,7 +102,7 @@ runexp(struct sexp *exp)
   case LIST:
     lst = (struct list*)exp;
     for(i=0;i<lst->length;i++)
-      runexp(lst->sexps[i]);
+      runexp(lst->sexps[i],funcs,nfunc);
     break;
 
   case APPLY:
@@ -141,7 +190,7 @@ runexp(struct sexp *exp)
             exit();
           }
           printf(2, "start\n");
-          runexp(lst->sexps[i]);
+          runexp(lst->sexps[i],funcs,nfunc);
         }
         wait();
 
@@ -162,14 +211,40 @@ runexp(struct sexp *exp)
         open("console", O_RDWR);
         printf(2,"argv%d: %s\n",i,argv[i]);
       }
+      if((i==0)&&(strcmp(argv[0], "defun")==0))
+      {
+          if(fork1() == 0){
+            if(argv[0] == 0)
+              exit();
+            defunc(lst,funcs,nfunc);
+          }
+          wait();
+          break;
+      }
       if(i==lst->length-1)
       {
         printf(2, "in 4, length:%d\n",lst->length);
         printf(2, "exec %s\n",argv[0]);
+        int j,k,flg;
+        printf(2, "nfunc: %d\n",*nfunc);
+        for(j=0;j<MAXFUNC;j++)
+        {
+          if(strcmp(argv[0], funcs[j].name)==0)
+          {
+            for(k=0;k<funcs[j].argc;k++)
+              funcs[j].argv[k]=argv[k+1];
+            flg=1;
+            printf(2, "find func\n");
+            break;
+          }
+        }
         if(fork1() == 0){
           if(argv[0] == 0)
             exit();
-          exec(argv[0], argv);
+          if(flg==1)
+            runexp(funcs[j].sexp,funcs,nfunc);
+          else
+            exec(argv[0], argv);
         }
         wait();
       }
@@ -195,7 +270,10 @@ int
 main(void)
 {
   static char buf[100];
-  int fd;
+  int fd=0;
+  static int nfuncs;
+  int *nfunc=&nfuncs;
+  struct func funcs[MAXFUNC];
 
   // Ensure that three file descriptors are open.
   while((fd = open("console", O_RDWR)) >= 0){
@@ -214,9 +292,10 @@ main(void)
         printf(2, "cannot cd %s\n", buf+3);
       continue;
     }
-    if(fork1() == 0)
-      runexp(parseexp(buf));
-      /* runcmd(parsecmd(buf)); */
+    if(fork1() == 0){
+      printf(2, "nfunc: %d\n",*nfunc);
+      runexp(parseexp(buf),funcs,nfunc);
+    }
     wait();
   }
   exit();
