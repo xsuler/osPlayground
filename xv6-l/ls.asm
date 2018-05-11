@@ -34,16 +34,17 @@ main(int argc, char *argv[])
     ls(".");
     exit();
   }
-  for(i=1; i<argc; i++)
+  for(i=1; i<argc; i++){
     ls(argv[i]);
   28:	83 ec 0c             	sub    $0xc,%esp
   2b:	ff 33                	pushl  (%ebx)
   2d:	83 c3 04             	add    $0x4,%ebx
   30:	e8 cb 00 00 00       	call   100 <ls>
-  for(i=1; i<argc; i++)
+  for(i=1; i<argc; i++){
   35:	83 c4 10             	add    $0x10,%esp
   38:	39 f3                	cmp    %esi,%ebx
   3a:	75 ec                	jne    28 <main+0x28>
+  }
   exit();
   3c:	e8 41 05 00 00       	call   582 <exit>
     ls(".");

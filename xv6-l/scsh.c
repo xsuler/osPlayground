@@ -35,10 +35,9 @@ void
 runexp(struct sexp *exp)
 {
 
- /* int p[2]; */
-  int i;
+  int i,bufs=0;
   char* argv[MAXARGS];
-  char argvt[MAXARGS][21];
+  static char argvbuf[100];
   struct list *lst;
 
   if(exp== 0)
@@ -137,7 +136,7 @@ runexp(struct sexp *exp)
       {
         if(fork1() == 0){
           close(1);
-          if(open("./.etemp", O_WRONLY|O_CREATE) < 0){
+          if(open(".etemp", O_WRONLY|O_CREATE) < 0){
             printf(2, "open console temp file failed\n");
             exit();
           }
@@ -145,15 +144,23 @@ runexp(struct sexp *exp)
           runexp(lst->sexps[i]);
         }
         wait();
+
         printf(2, "end\n");
-        close(0);
-        if(open("./.etemp", O_RDONLY) < 0){
-          printf(2, "open console temp file failed\n");
+        close(2);
+        int ffd;
+        if((ffd=open(".etemp", O_RDONLY)) < 0){
+          printf(1, "open console temp file failed\n");
           exit();
         }
-        read(0,argvt[i],20);
-        argv[i]=argvt[i];
-
+        printf(1,"fd: %d\n",ffd);
+        argv[i]=argvbuf+bufs;
+        bufs+=read(2,argvbuf+bufs,20);
+        argvbuf[bufs++]=0;
+        printf(1, "sizeof : %d\n",bufs);
+        close(2);
+        unlink(".etemp");
+        open("console", O_RDWR);
+        printf(2,"argv%d: %s\n",i,argv[i]);
       }
       if(i==lst->length-1)
       {
@@ -163,13 +170,13 @@ runexp(struct sexp *exp)
           if(argv[0] == 0)
             exit();
           exec(argv[0], argv);
-
         }
         wait();
       }
     }
     break;
   }
+
   exit();
 }
 

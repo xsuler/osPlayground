@@ -79,7 +79,8 @@ main(int argc, char *argv[])
     ls(".");
     exit();
   }
-  for(i=1; i<argc; i++)
+  for(i=1; i<argc; i++){
     ls(argv[i]);
+  }
   exit();
 }
