@@ -34,10 +34,11 @@ struct sexp *parseexp(char*);
 void
 runexp(struct sexp *exp)
 {
-  int p[2];
+
+ /* int p[2]; */
   int i;
   char* argv[MAXARGS];
-  char argvt[MAXARGS][20];
+  char argvt[MAXARGS][21];
   struct list *lst;
 
   if(exp== 0)
@@ -57,80 +58,82 @@ runexp(struct sexp *exp)
     break;
 
   case APPLY:
+    printf(2, "in 1\n");
     lst = (struct list*)exp;
+    argv[lst->length]=0;
     for(i=0;i<lst->length;i++)
     {
-      if(i==0)
-      {
-        if(lst->sexps[i]->type==ATOM)
-          argv[i]=((struct atom*)lst->sexps[i])->symbol;
-        break;
-      }
-      if(i==lst->length-1)
-      {
-        if(lst->sexps[i]->type==ATOM)
-        {
-          if(pipe(p) < 0)
-            panic("pipe");
-          if(fork1() == 0){
-            close(0);
-            dup(p[0]);
-            close(p[0]);
-            close(p[1]);
 
-            if(argv[0] == 0)
-              exit();
-            exec(argv[0], argv);
-            printf(2, "exec %s failed\n", argv[0]);
-          }
-          char *syb=((struct atom*)lst->sexps[i])->symbol;
-          write(p[1], syb, sizeof(syb));
-          close(p[0]);
-          close(p[1]);
-          wait();
-        }
-        if(lst->sexps[i]->type==LIST)
-        {
-          panic("syntax");
-        }
-        if(lst->sexps[i]->type==APPLY)
-        {
-          if(pipe(p) < 0)
-            panic("pipe");
-          if(fork1() == 0){
-            close(1);
-            dup(p[1]);
-            close(p[0]);
-            close(p[1]);
-            runexp(lst->sexps[i]);
-          }
-          if(fork1() == 0){
-            close(0);
-            dup(p[0]);
-            close(p[0]);
-            close(p[1]);
+      /* if(i==0) */
+      /* { */
+      /*   if(lst->sexps[i]->type==ATOM) */
+      /*     argv[i]=((struct atom*)lst->sexps[i])->symbol; */
+      /*   break; */
+      /* } */
+          /* if(pipe(p) < 0) */
+          /*   panic("pipe"); */
+          /* if(fork1() == 0){ */
+          /*   close(0); */
+          /*   dup(p[0]); */
+          /*   close(p[0]); */
+          /*   close(p[1]); */
 
-            if(argv[0] == 0)
-              exit();
-            exec(argv[0], argv);
-            printf(2, "exec %s failed\n", argv[0]);
-          }
-          close(p[0]);
-          close(p[1]);
-          wait();
-          wait();
-        }
-        break;
-      }
+        /*     if(argv[0] == 0) */
+        /*       exit(); */
+        /*     exec(argv[0], argv); */
+        /*     printf(2, "exec %s failed\n", argv[0]); */
+        /*   } */
+        /*   char *syb=((struct atom*)lst->sexps[i])->symbol; */
+        /*   write(p[1], syb, sizeof(syb)); */
+        /*   close(p[0]); */
+        /*   close(p[1]); */
+        /*   wait(); */
+        /* } */
+        /* if(lst->sexps[i]->type==LIST) */
+        /* { */
+        /*   panic("syntax"); */
+        /* } */
+        /* if(lst->sexps[i]->type==APPLY) */
+        /* { */
+        /*   if(pipe(p) < 0) */
+        /*     panic("pipe"); */
+        /*   if(fork1() == 0){ */
+        /*     close(1); */
+        /*     dup(p[1]); */
+        /*     close(p[0]); */
+        /*     close(p[1]); */
+        /*     runexp(lst->sexps[i]); */
+        /*   } */
+        /*   if(fork1() == 0){ */
+        /*     close(0); */
+        /*     dup(p[0]); */
+        /*     close(p[0]); */
+        /*     close(p[1]); */
+
+      /*       if(argv[0] == 0) */
+      /*         exit(); */
+      /*       exec(argv[0], argv); */
+      /*       printf(2, "exec %s failed\n", argv[0]); */
+      /*     } */
+      /*     close(p[0]); */
+      /*     close(p[1]); */
+      /*     wait(); */
+      /*     wait(); */
+      /*   } */
+      /*   break; */
+      /* } */
+
+      printf(2, "in 2, length:%d\n",lst->length);
       if(lst->sexps[i]->type==ATOM)
       {
         argv[i]=((struct atom*)lst->sexps[i])->symbol;
+        printf(2, "in 3, length:%d\n",lst->length);
       }
-      if(lst->sexps[i]->type==LIST)
+      else if(lst->sexps[i]->type==LIST)
       {
         panic("syntax");
       }
-      if(lst->sexps[i]->type==APPLY)
+      else if(lst->sexps[i]->type==APPLY)
       {
         if(fork1() == 0){
           close(1);
@@ -138,15 +141,29 @@ runexp(struct sexp *exp)
             printf(2, "open console temp file failed\n");
             exit();
           }
+          printf(2, "start\n");
           runexp(lst->sexps[i]);
-          close(0);
-          if(open("./.etemp", O_RDONLY) < 0){
-            printf(2, "open console temp file failed\n");
+        }
+        wait();
+        printf(2, "end\n");
+        close(0);
+        if(open("./.etemp", O_RDONLY) < 0){
+          printf(2, "open console temp file failed\n");
+          exit();
+        }
+        read(0,argvt[i],20);
+        argv[i]=argvt[i];
+
+      }
+      if(i==lst->length-1)
+      {
+        printf(2, "in 4, length:%d\n",lst->length);
+        printf(2, "exec %s\n",argv[0]);
+        if(fork1() == 0){
+          if(argv[0] == 0)
             exit();
-          }
-          read(0,argvt[i],20);
-          argv[i]=argvt[i];
-          unlink("./.etemp");
+          exec(argv[0], argv);
+
         }
         wait();
       }
