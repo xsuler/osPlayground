@@ -8,8 +8,10 @@ enhanced xv6(course assignments)
 
 - to do: shared memory & define functions in shell & windows manager
 
+------
 - lisp shell syntax
 
+------
 - optimal scheduler
 
 # License
