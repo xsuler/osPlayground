@@ -6,7 +6,10 @@ enhanced xv6(course assignments)
 
 # log
 
-- to do: shared memory & define functions in shell & windows manager
+- to do: define functions in shell & windows manager
+
+------
+- shared memory
 
 ------
 - lisp shell syntax
