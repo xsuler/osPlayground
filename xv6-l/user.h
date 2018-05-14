@@ -24,6 +24,8 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int trace(void);
+int getsharem(int idx);
+int releasesharem(int idx);
 
 // ulib.c
 int stat(char*, struct stat*);

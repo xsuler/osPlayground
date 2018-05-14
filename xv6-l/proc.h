@@ -1,3 +1,4 @@
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -53,6 +54,9 @@ struct proc {
   struct proc* next;
   uint priority;
   uint timepiece;
+  uint nshared;
+  char sharedrec[MAXSHAREDPG];
+  char *sharedvm[MAXSHAREDPG];
 };
 
 struct pqueue{

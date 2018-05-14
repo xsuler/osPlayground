@@ -150,7 +150,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-  
+
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -182,17 +182,49 @@ userinit(void)
   release(&ptable.lock);
 }
 
+int
+releaseshared(uint idx)
+{
+  struct proc *curproc = myproc();
+
+  if(curproc->sharedrec[idx]!='s')
+    return 0;
+
+  curproc->sharedrec[idx]=0;
+  desharevm(idx);
+  return 0;
+}
+
+char*
+getshared(uint idx)
+{
+  cprintf("in 0 getsharem\n");
+  struct proc *curproc = myproc();
+
+  if(curproc->sharedrec[idx]=='s'){
+    return curproc->sharedvm[idx];
+  }
+
+  sharevm(curproc->pgdir, idx, curproc->nshared);
+  curproc->nshared++;
+  curproc->sharedvm[idx]=(char*)KERNBASE-(curproc->nshared)*PGSIZE;
+  curproc->sharedrec[idx]='s';
+  switchuvm(curproc);
+  return curproc->sharedvm[idx];
+}
+
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
 int
 growproc(int n)
 {
+
   uint sz;
   struct proc *curproc = myproc();
 
   sz = curproc->sz;
   if(n > 0){
-    if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
+    if((sz = allocuvm(curproc->pgdir, sz, sz + n,curproc->nshared)) == 0)
       return -1;
   } else if(n < 0){
     if((sz = deallocuvm(curproc->pgdir, sz, sz + n)) == 0)
@@ -321,7 +353,7 @@ wait(void)
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir);
+        freevm(p->pgdir,curproc->nshared);
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;

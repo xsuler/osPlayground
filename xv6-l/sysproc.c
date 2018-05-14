@@ -95,3 +95,22 @@ sys_trace(void)
 {
   return myproc()->timepiece;
 }
+
+int
+sys_releasesharem(void)
+{
+  int idx;
+  if(argint(0,&idx)<0)
+    return -1;
+  releaseshared(idx);
+  return 0;
+}
+
+int
+sys_getsharem(void)
+{
+  int idx;
+  if(argint(0,&idx)<0)
+    return -1;
+  return (int)getshared(idx);
+}

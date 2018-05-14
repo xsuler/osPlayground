@@ -10,6 +10,11 @@
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
+struct sharedmemo{
+  char *shared[MAXSHAREDPG];
+  uint recs[MAXSHAREDPG];
+}sharedmemo;
+
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -129,7 +134,7 @@ setupkvm(void)
   for(k = kmap; k < &kmap[NELEM(kmap)]; k++)
     if(mappages(pgdir, k->virt, k->phys_end - k->phys_start,
                 (uint)k->phys_start, k->perm) < 0) {
-      freevm(pgdir);
+      freevm(pgdir,0);
       return 0;
     }
   return pgdir;
@@ -216,15 +221,48 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
   return 0;
 }
 
+
+void
+sharevm(pde_t *pgdir,int idx,uint nshared)
+{
+  char *mem;
+
+  cprintf("come in\n");
+
+  if(sharedmemo.recs[idx]>0){
+    mem=sharedmemo.shared[idx];
+  }
+  else{
+    cprintf("new one\n");
+    cprintf("KERNENBASE: %d\n",(uint)KERNBASE);
+    mem = kalloc();
+    if(mem == 0){
+      cprintf("allocuvm out of memory\n");
+      return;
+    }
+    memset(mem, 0, PGSIZE);
+    sharedmemo.shared[idx]=mem;
+  }
+
+  if(mappages(pgdir, (char*)(KERNBASE-(nshared+1)*PGSIZE), PGSIZE, V2P(mem), PTE_W|PTE_U) < 0){
+    cprintf("allocuvm out of memory (2)\n");
+    kfree(mem);
+    return;
+  }
+  cprintf("get memory: %d\n",(uint)mem);
+
+  sharedmemo.recs[idx]++;
+}
+
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 int
-allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
+allocuvm(pde_t *pgdir, uint oldsz, uint newsz,uint nshared)
 {
   char *mem;
   uint a;
 
-  if(newsz >= KERNBASE)
+  if(newsz >= KERNBASE-nshared*PGSIZE)
     return 0;
   if(newsz < oldsz)
     return oldsz;
@@ -278,16 +316,28 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   return newsz;
 }
 
+void
+desharevm(int idx)
+{
+  if(sharedmemo.recs[idx]<=0)
+    return;
+
+  sharedmemo.recs[idx]--;
+  if(sharedmemo.recs[idx]<=0){
+    kfree(sharedmemo.shared[idx]);
+  }
+}
+
 // Free a page table and all the physical memory pages
 // in the user part.
 void
-freevm(pde_t *pgdir)
+freevm(pde_t *pgdir,uint nshared)
 {
   uint i;
 
   if(pgdir == 0)
     panic("freevm: no pgdir");
-  deallocuvm(pgdir, KERNBASE, 0);
+  deallocuvm(pgdir, KERNBASE-nshared*PGSIZE, 0);
   for(i = 0; i < NPDENTRIES; i++){
     if(pgdir[i] & PTE_P){
       char * v = P2V(PTE_ADDR(pgdir[i]));
@@ -338,7 +388,7 @@ copyuvm(pde_t *pgdir, uint sz)
   return d;
 
 bad:
-  freevm(d);
+  freevm(d,0);
   return 0;
 }
 

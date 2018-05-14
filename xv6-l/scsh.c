@@ -335,12 +335,13 @@ atom(void)
 struct sexp*
 list(void)
 {
-  struct list*exp;
+  struct list *exp;
 
   exp= malloc(sizeof(*exp));
   memset(exp, 0, sizeof(*exp));
   return (struct sexp*)exp;
 }
+
 //PAGEBREAK!
 // Parsing
 
@@ -377,6 +378,7 @@ parselist(char **ps, char *es)
 
   int i=1;
   char *res=*ps;
+
   while(res<es)
   {
     if(*res=='(')
@@ -432,6 +434,7 @@ parsesexp(char **ps, char *es)
     (*ps)++;
   switch(*(*ps)){
   case 0:
+
    break;
   case '(':
     (*ps)++;

@@ -13,3 +13,4 @@
 #define FSSIZE       1000  // size of file system in blocks
 /*brand new dfs*/
 #define NPROCQ     3  // priority
+#define MAXSHAREDPG  10
