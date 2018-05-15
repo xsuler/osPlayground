@@ -198,7 +198,6 @@ releaseshared(uint idx)
 char*
 getshared(uint idx)
 {
-  cprintf("in 0 getsharem\n");
   struct proc *curproc = myproc();
 
   if(curproc->sharedrec[idx]=='s'){
@@ -245,6 +244,7 @@ fork(void)
   struct proc *np;
   struct proc *curproc = myproc();
 
+
   // Allocate process.
   if((np = allocproc()) == 0){
     return -1;
@@ -281,6 +281,12 @@ fork(void)
   qpush(np);
 
   release(&ptable.lock);
+
+  for(i=0;i<MAXSHAREDPG;i++)
+  {
+    np->sharedrec[i]=0;
+  }
+  np->nshared=0;
 
   return pid;
 }

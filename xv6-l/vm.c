@@ -227,14 +227,11 @@ sharevm(pde_t *pgdir,int idx,uint nshared)
 {
   char *mem;
 
-  cprintf("come in\n");
 
   if(sharedmemo.recs[idx]>0){
     mem=sharedmemo.shared[idx];
   }
   else{
-    cprintf("new one\n");
-    cprintf("KERNENBASE: %d\n",(uint)KERNBASE);
     mem = kalloc();
     if(mem == 0){
       cprintf("allocuvm out of memory\n");
@@ -249,7 +246,6 @@ sharevm(pde_t *pgdir,int idx,uint nshared)
     kfree(mem);
     return;
   }
-  cprintf("get memory: %d\n",(uint)mem);
 
   sharedmemo.recs[idx]++;
 }

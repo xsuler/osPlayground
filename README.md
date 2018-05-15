@@ -6,7 +6,18 @@ enhanced xv6(course assignments)
 
 # log
 
-- to do: define functions in shell & windows manager
+- to do:  windows manager, script
+
+------
+- define functions
+
+to do:
+- store function to disk
+- define variables (suggest using pecho)
+
+bugs to fix:
+- call functions in a function
+- functions with no variable
 
 ------
 - shared memory
