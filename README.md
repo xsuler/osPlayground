@@ -6,26 +6,15 @@ enhanced xv6(course assignments)
 
 # log
 
-- to do:  windows manager, script
-
-------
-- define functions
-
 to do:
+- windows manager, script
 - store function to disk
 - define variables (suggest using pecho)
 
-bugs to fix:
-- call functions in a function
-- functions with no variable
-
-------
+done:
+- define functions
 - shared memory
-
-------
 - lisp shell syntax
-
-------
 - optimal scheduler
 
 # License
