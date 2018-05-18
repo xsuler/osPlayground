@@ -39,6 +39,7 @@ struct func {
 struct shared {
   int nfunc;
   struct func funcs[MAXFUNC];
+  char xargv[MAXARGS][MAXARGL];
   char *top;
 };
 
@@ -119,9 +120,9 @@ void defunc(struct list *lst) {
 // Execute exp.  Never returns.
 void runexp(struct sexp *exp) {
 
-  int i, bufs = 0;
+  int i;
   char *argv[MAXARGS];
-  static char argvbuf[100];
+  char xargv[MAXARGS][MAXARGL];
   struct list *lst;
 
   if (exp == 0)
@@ -151,6 +152,7 @@ void runexp(struct sexp *exp) {
       else if (lst->sexps[i]->type == APPLY) {
         if (fork1() == 0) {
           close(1);
+          getsharem(0);
           if (open(".etemp", O_WRONLY | O_CREATE) < 0) {
             printf(2, "open console temp file failed\n");
             exit();
@@ -165,9 +167,10 @@ void runexp(struct sexp *exp) {
           printf(1, "open console temp file failed\n");
           exit();
         }
-        argv[i] = argvbuf + bufs;
-        bufs += read(2, argvbuf + bufs, 20);
-        argvbuf[bufs++] = 0;
+
+        argv[i] = xargv[i];
+        int n=read(2, argv[i], 20);
+        argv[i][n] = 0;
         close(2);
         unlink(".etemp");
         open("console", O_RDWR);
@@ -182,14 +185,22 @@ void runexp(struct sexp *exp) {
         break;
       }
       if (i == lst->length - 1) {
-        printf(2, "exec %s\n", argv[0]);
         int j, k, flg = 0;
         struct shared *sh = (struct shared *)getsharem(0);
         for (j = 0; j < MAXFUNC; j++) {
           if (strcmp(argv[0], sh->funcs[j].name) == 0) {
+
+            argv[sh->funcs[j].argc+1] = 0;
+            for (k = 0; k < MAXARGS; k++) {
+              if (argv[k] == 0)
+                break;
+              strcpy(sh->xargv[k], argv[k]);
+            }
             for (k = 0; k < sh->funcs[j].argc; k++)
-              replaceAtom(sh->funcs[j].sexp, sh->funcs[j].argv[k], argv[k + 1]);
-            argv[sh->funcs[j].argc] = 0;
+            {
+              replaceAtom(sh->funcs[j].sexp, sh->funcs[j].argv[k], sh->xargv[k + 1]);
+              strcpy(sh->funcs[j].argv[k],argv[k+1]);
+            }
             flg = 1;
             break;
           }
@@ -199,19 +210,19 @@ void runexp(struct sexp *exp) {
             exit();
           if (flg == 1) {
             struct shared *sh = (struct shared *)getsharem(0);
-            printf(2, "exec func: %s\n", sh->funcs[j].name);
             runexp(sh->funcs[j].sexp);
           } else {
             getsharem(0);
             printf(2, "argv: %s\n", argv[1]);
-            printf(2, "coming~: %s\n", argv[0]);
-            char xargv[MAXARGS][MAXARGL];
             int j;
             for (j = 0; j < MAXARGS; j++) {
               if (argv[j] == 0)
                 break;
-              strcpy(xargv[j], argv[j]);
-              argv[j] = xargv[j];
+              if(argv[j]!=xargv[j])
+              {
+                strcpy(xargv[j], argv[j]);
+                argv[j] = xargv[j];
+              }
             }
             exec(argv[0], argv);
           }
@@ -233,6 +244,7 @@ int getcmd(char *buf, int nbuf) {
     return -1;
   return 0;
 }
+
 
 int main(void) {
   static char buf[100];
@@ -279,6 +291,7 @@ int fork1(void) {
   pid = fork();
   if (pid == -1)
     panic("fork");
+
   return pid;
 }
 

@@ -280,13 +280,13 @@ fork(void)
   //brand new
   qpush(np);
 
-  release(&ptable.lock);
-
   for(i=0;i<MAXSHAREDPG;i++)
   {
     np->sharedrec[i]=0;
   }
   np->nshared=0;
+
+  release(&ptable.lock);
 
   return pid;
 }
