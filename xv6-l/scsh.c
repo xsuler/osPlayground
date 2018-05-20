@@ -148,7 +148,7 @@ void runexp(struct sexp *exp) {
       if (lst->sexps[i]->type == ATOM)
         argv[i] = ((struct atom *)lst->sexps[i])->symbol;
       else if (lst->sexps[i]->type == LIST)
-        panic("syntax");
+        panic("syntax error");
       else if (lst->sexps[i]->type == APPLY) {
         if (fork1() == 0) {
           close(1);
@@ -213,7 +213,6 @@ void runexp(struct sexp *exp) {
             runexp(sh->funcs[j].sexp);
           } else {
             getsharem(0);
-            printf(2, "argv: %s\n", argv[1]);
             int j;
             for (j = 0; j < MAXARGS; j++) {
               if (argv[j] == 0)
@@ -252,6 +251,7 @@ int main(void) {
   struct shared *sh = (struct shared *)getsharem(0);
   sh->nfunc = 0;
   sh->top = (char *)sh + sizeof(struct shared);
+  split(-2);
 
   // Ensure that three file descriptors are open.
   while ((fd = open("console", O_RDWR)) >= 0) {
@@ -271,8 +271,7 @@ int main(void) {
       continue;
     }
     if (fork1() == 0) {
-      struct shared *sh = (struct shared *)getsharem(0);
-      printf(2, "nfunc: %d\n", sh->nfunc);
+      getsharem(0);
       runexp(parseexp(buf));
     }
     wait();
@@ -323,8 +322,7 @@ char esymbols[] = "()";
 int peek(char **ps, char *es, char *toks) {
   char *s;
 
-  s = *ps;
-  while (s < es && strchr(whitespace, *s))
+  s = *ps; while (s < es && strchr(whitespace, *s))
     s++;
   *ps = s;
   return *s && strchr(toks, *s);
@@ -359,7 +357,7 @@ struct sexp *parselist(char **ps, char *es) {
     res++;
   }
   if (res == es)
-    panic("syntax");
+    panic("syntax error");
 
   for (i = 0; i < MAXARGS && (*ps) < res; i++) {
     lst->sexps[i] = parsesexp(ps, res);
@@ -424,7 +422,7 @@ struct sexp *parseexp(char *s) {
   peek(&s, es, "");
   if (s != es) {
     printf(2, "leftovers: %s\n", s);
-    panic("syntax");
+    panic("syntax error");
   }
   snulterminate(exp);
   return exp;

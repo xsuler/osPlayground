@@ -114,3 +114,12 @@ sys_getsharem(void)
     return -1;
   return (int)getshared(idx);
 }
+
+int
+sys_split(void)
+{
+  int d;
+  if(argint(0,&d)<0)
+    return -1;
+  return (int)splitw(d);
+}

@@ -107,6 +107,7 @@ extern int sys_uptime(void);
 extern int sys_trace(void);
 extern int sys_getsharem(void);
 extern int sys_releasesharem(void);
+extern int sys_split(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -134,6 +135,7 @@ static int (*syscalls[])(void) = {
 [SYS_trace]   sys_trace,
 [SYS_getsharem]  sys_getsharem,
 [SYS_releasesharem]  sys_releasesharem,
+[SYS_split]  sys_split,
 };
 
 void

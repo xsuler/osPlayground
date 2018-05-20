@@ -24,6 +24,20 @@ static struct {
   int locking;
 } cons;
 
+static int cputflag;
+int wdi;
+
+struct wdw{
+  int lastnew;
+  char used[MAXWINDOWS];
+  int left[MAXWINDOWS];
+  int width[MAXWINDOWS];
+  int top[MAXWINDOWS];
+  int height[MAXWINDOWS];
+};
+
+static struct wdw window={.left[0]=0,.top[0]=0,.width[0]=80,.height[0]=24};
+
 static void
 printint(int xx, int base, int sign)
 {
@@ -139,16 +153,27 @@ cgaputc(int c)
   outb(CRTPORT, 15);
   pos |= inb(CRTPORT+1);
 
+  /* int vv=pos/window.width[wdi]; */
+  /* pos+=(vv-1)*(80-window.width[wdi])+(40-window.width[wdi]/2); */
+  /* pos+=80*window.top[wdi]; */
+
   if(c == '\n')
-    pos += 80 - pos%80;
+    pos += 80 - pos%80+ window.left[wdi];
   else if(c == BACKSPACE){
-    if(pos > 0) --pos;
+    if(pos > 0) {
+      --pos;
+      if(pos%80<window.left[wdi])
+        pos-=80-window.width[wdi];
+    };
   } else{
     if(c>='0'&&c<='9'){
-      crt[pos++] = (c&0xff) | 0x0b00;  // black on white
+      crt[pos] = (c&0xff) | 0x0b00;  // black on white
     }else{
-      crt[pos++] = (c&0xff) | 0x0500;  // black on white
+      crt[pos] = (c&0xff) | 0x0500;  // black on white
     }
+    pos++;
+    if(pos%80>window.left[wdi]+window.width[wdi])
+      pos+=80-window.width[wdi];
   }
 
   if(pos < 0 || pos > 25*80)
@@ -237,6 +262,43 @@ consoleintr(int (*getc)(void))
   }
 }
 
+//need a special split for init in scsh
+int
+splitw(int d)
+{
+
+  struct proc* curproc=myproc();
+  int idx = curproc->wdidx;
+  int i,new=idx;
+  switch(d)
+  {
+  case -2:
+    cputflag=1;
+    break;
+  case -1:
+    curproc->wdidx=window.lastnew;
+    break;
+  case 0:
+    window.width[idx]/=2;
+    for(i=0;i<MAXWINDOWS;i++)
+    {
+      new=(new+1)%MAXWINDOWS;
+      if(window.used[new]==0)
+        break;
+    }
+    window.used[new]=1;
+    window.left[new]=window.left[idx]+window.width[idx];
+    window.width[new]=window.width[idx];
+    window.top[new]=window.top[idx];
+    window.height[new]=window.height[idx];
+    window.lastnew=new;
+    cprintf("new left: %d\n", window.left[new]);
+    break;
+  }
+  return new;
+
+}
+
 int
 consoleread(struct inode *ip, char *dst, int n)
 {
@@ -279,6 +341,7 @@ int
 consolewrite(struct inode *ip, char *buf, int n)
 {
   int i;
+
 
   iunlock(ip);
   acquire(&cons.lock);

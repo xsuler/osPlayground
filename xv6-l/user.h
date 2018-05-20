@@ -26,6 +26,7 @@ int uptime(void);
 int trace(void);
 int getsharem(int idx);
 int releasesharem(int idx);
+int split(int d);
 
 // ulib.c
 int stat(char*, struct stat*);

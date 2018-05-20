@@ -14,3 +14,4 @@
 /*brand new dfs*/
 #define NPROCQ     3  // priority
 #define MAXSHAREDPG  10
+#define MAXWINDOWS  10

@@ -57,6 +57,7 @@ struct proc {
   uint nshared;
   char sharedrec[MAXSHAREDPG];
   char *sharedvm[MAXSHAREDPG];
+  int wdidx;
 };
 
 struct pqueue{

@@ -23,3 +23,4 @@
 #define SYS_trace  22
 #define SYS_getsharem 23
 #define SYS_releasesharem 24
+#define SYS_split 25

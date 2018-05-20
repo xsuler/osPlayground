@@ -10,7 +10,7 @@
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
-struct sharedmemo{
+static struct sharedmemo{
   char *shared[MAXSHAREDPG];
   uint recs[MAXSHAREDPG];
 }sharedmemo;

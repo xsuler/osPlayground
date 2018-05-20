@@ -137,6 +137,7 @@ found:
 
   //brand new
   p->priority=NPROCQ-1;
+  p->wdidx=0;
 
   return p;
 }
@@ -168,6 +169,7 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
@@ -194,6 +196,7 @@ releaseshared(uint idx)
   desharevm(idx);
   return 0;
 }
+
 
 char*
 getshared(uint idx)
@@ -285,6 +288,7 @@ fork(void)
     np->sharedrec[i]=0;
   }
   np->nshared=0;
+  np->wdidx=curproc->wdidx;
 
   release(&ptable.lock);
 
