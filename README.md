@@ -1,15 +1,18 @@
 # xunix 
-enhanced xv6(course assignments)
+enhanced xv6 (course assignments)
 
 - xv6-o -- original version
-- xv6-l -- optimal scheduler
+- xv6-l -- optimal version
 
 # log
 
 to do:
 - windows manager, script
-- store function to disk
-- define variables (suggest using pecho)
+- store functions to disk as scripts
+- compile functions to elf
+- define variables (suggest using pecho and syntax suger)
+- define if else
+- define defkeybinding
 
 done:
 - define functions
