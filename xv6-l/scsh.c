@@ -9,7 +9,7 @@
 
 #define MAXARGS 10
 #define MAXARGL 10
-#define MAXFUNC 10
+#define MAXFUNC 20
 #define MAXFUNNAME 10
 #define SYMBOLLENG 10
 
@@ -151,29 +151,13 @@ void runexp(struct sexp *exp) {
         panic("syntax error");
       else if (lst->sexps[i]->type == APPLY) {
         if (fork1() == 0) {
-          close(1);
           getsharem(0);
-          if (open(".etemp", O_WRONLY | O_CREATE) < 0) {
-            printf(2, "open console temp file failed\n");
-            exit();
-          }
+          memo(xargv[i]);
           runexp(lst->sexps[i]);
         }
         wait();
 
-        close(2);
-        int ffd;
-        if ((ffd = open(".etemp", O_RDONLY)) < 0) {
-          printf(1, "open console temp file failed\n");
-          exit();
-        }
-
         argv[i] = xargv[i];
-        int n=read(2, argv[i], 20);
-        argv[i][n] = 0;
-        close(2);
-        unlink(".etemp");
-        open("console", O_RDWR);
       }
       if ((i == 0) && (strcmp(argv[0], "defun") == 0)) {
         if (fork1() == 0) {

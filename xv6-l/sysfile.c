@@ -284,6 +284,26 @@ create(char *path, short type, short major, short minor)
 }
 
 int
+sys_memo(void)
+{
+  char *memo;
+  struct file *f;
+
+  if(argstr(0, &memo) < 0 )
+    return -1;
+
+  if((f = filealloc()) == 0){
+    if(f)
+      fileclose(f);
+    return -1;
+  }
+
+  f->type = FD_MEMO;
+  f->off = 0;
+  return 0;
+}
+
+int
 sys_open(void)
 {
   char *path;

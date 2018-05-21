@@ -123,6 +123,11 @@ filewrite(struct file *f, char *addr, int n)
     return -1;
   if(f->type == FD_PIPE)
     return pipewrite(f->pipe, addr, n);
+  if(f->type == FD_MEMO){
+    safestrcpy(f->memo, addr, n);
+    f->memo[n]=0;
+    return n;
+  }
   if(f->type == FD_INODE){
     // write a few blocks at a time to avoid exceeding
     // the maximum log transaction size, including

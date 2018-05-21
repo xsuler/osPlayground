@@ -717,10 +717,12 @@ SYSCALL(split)
  46a:	b8 19 00 00 00       	mov    $0x19,%eax
  46f:	cd 40                	int    $0x40
  471:	c3                   	ret    
- 472:	66 90                	xchg   %ax,%ax
- 474:	66 90                	xchg   %ax,%ax
- 476:	66 90                	xchg   %ax,%ax
- 478:	66 90                	xchg   %ax,%ax
+
+00000472 <memo>:
+SYSCALL(memo)
+ 472:	b8 1a 00 00 00       	mov    $0x1a,%eax
+ 477:	cd 40                	int    $0x40
+ 479:	c3                   	ret    
  47a:	66 90                	xchg   %ax,%ax
  47c:	66 90                	xchg   %ax,%ax
  47e:	66 90                	xchg   %ax,%ax

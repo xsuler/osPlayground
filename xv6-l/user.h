@@ -27,6 +27,7 @@ int trace(void);
 int getsharem(int idx);
 int releasesharem(int idx);
 int split(int d);
+int memo(char* d);
 
 // ulib.c
 int stat(char*, struct stat*);
