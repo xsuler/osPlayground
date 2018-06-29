@@ -846,8 +846,8 @@ printf(int fd, char *fmt, ...)
  514:	56                   	push   %esi
  515:	53                   	push   %ebx
  516:	83 ec 2c             	sub    $0x2c,%esp
+  int c, i, state;
   uint *ap;
-
 
   state = 0;
   ap = (uint*)(void*)&fmt + 1;

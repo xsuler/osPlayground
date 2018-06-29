@@ -27,6 +27,8 @@ static struct {
 } cons;
 
 char crtflags[MAXWINDOWS];
+ushort crtbufs[MAXWINDOWS][80*23];
+uint poss[MAXWINDOWS];
 
 static void
 printint(int xx, int base, int sign)
@@ -130,7 +132,7 @@ panic(char *s)
 //PAGEBREAK: 50
 #define BACKSPACE 0x100
 #define CRTPORT 0x3d4
-/* static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory */
+static ushort *phycrt = (ushort*)P2V(0xb8000);  // CGA memory
 
 static void
 cgaputc(int c)
@@ -230,31 +232,14 @@ title()
   crt[24*80+51+n]=' '| 0x0b00;
   crt[24*80+51+n+1]='B'| 0x0f00;
 }
-void
-display(int f)
+
+void crtcpy(ushort* tg,ushort* ss)
 {
-  ushort *adr=(ushort*)P2V(0xb8000);
-  if(f==-1)
+  int i;
+  for(i=0;i<80*23;i++)
   {
-    memset(adr, 0, sizeof(adr[0])*(23*80));
-
-    outb(CRTPORT, 14);
-    outb(CRTPORT+1, 0);
-    outb(CRTPORT, 15);
-    outb(CRTPORT+1, 0);
-
-    return;
+    tg[i]=ss[i];
   }
-  if(f==-2)
-  {
-    memset(adr, 0, sizeof(adr[0])*(23*80));
-
-    outb(CRTPORT, 14);
-    outb(CRTPORT+1, 0);
-    outb(CRTPORT, 15);
-    outb(CRTPORT+1, 0);
-  }
-
 }
 
 int
@@ -262,6 +247,7 @@ splitw(int n)
 {
   cgaflag=1;
   int i;
+  uint pos;
   if(n==-1)
   {
     for(i=0;i<MAXWINDOWS;i++)
@@ -269,9 +255,24 @@ splitw(int n)
       if(crtflags[i]==0)
       {
         myproc()->widx=i;
+        crtcpy(crtbufs[curidx],phycrt);
+
+        outb(CRTPORT, 14);
+        pos = inb(CRTPORT+1) << 8;
+        outb(CRTPORT, 15);
+        pos |= inb(CRTPORT+1);
+
+        poss[curidx]=pos;
+
         curidx=i;
+        memset(phycrt, 0, sizeof(phycrt[0])*(23*80));
+
+        outb(CRTPORT, 14);
+        outb(CRTPORT+1, 0);
+        outb(CRTPORT, 15);
+        outb(CRTPORT+1, 0);
+
         crtflags[i]=1;
-        display(-1);
         title();
         break;
       }
@@ -281,8 +282,22 @@ splitw(int n)
   {
     if(crtflags[n]>0)
     {
+      crtcpy(crtbufs[curidx],phycrt);
+
+      outb(CRTPORT, 14);
+      pos = inb(CRTPORT+1) << 8;
+      outb(CRTPORT, 15);
+      pos |= inb(CRTPORT+1);
+      poss[curidx]=pos;
+
       curidx=n;
-      display(-2);
+      crtcpy(phycrt,crtbufs[curidx]);
+
+      outb(CRTPORT, 14);
+      outb(CRTPORT+1, poss[curidx]>>8);
+      outb(CRTPORT, 15);
+      outb(CRTPORT+1, poss[curidx]);
+
       title();
     }
   }
