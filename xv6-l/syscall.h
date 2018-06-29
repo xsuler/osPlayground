@@ -25,3 +25,6 @@
 #define SYS_releasesharem 24
 #define SYS_split 25
 #define SYS_memo 26
+#define SYS_getmemo 27
+#define SYS_setmemo 28
+#define SYS_att 29

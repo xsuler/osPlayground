@@ -21,6 +21,17 @@ sys_exit(void)
 }
 
 int
+sys_split(void)
+{
+  int op;
+
+  if(argint(0, &op) < 0)
+    return -1;
+  splitw(op);
+  return  0;
+}
+
+int
 sys_wait(void)
 {
   return wait();
@@ -112,14 +123,19 @@ sys_getsharem(void)
   int idx;
   if(argint(0,&idx)<0)
     return -1;
+  if(idx==1)
+    getshared(0);
   return (int)getshared(idx);
 }
 
 int
-sys_split(void)
+sys_att(void)
 {
-  int d;
-  if(argint(0,&d)<0)
+  int cmd;
+  if(argint(0,&cmd)<0)
     return -1;
-  return (int)splitw(d);
+  cli();
+  cpus[0].consflag=cmd;
+  cpus[1].consflag=cmd;
+  return cpus[0].rtime+cpus[1].rtime;
 }

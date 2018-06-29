@@ -22,6 +22,7 @@ void            cprintf(char*, ...);
 int             splitw(int);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+void            title();
 
 // exec.c
 int             exec(char*, char**);
@@ -101,6 +102,7 @@ int             pipealloc(struct file**, struct file**);
 void            pipeclose(struct pipe*, int);
 int             piperead(struct pipe*, char*, int);
 int             pipewrite(struct pipe*, char*, int);
+int             memowrite(char*,int);
 
 //PAGEBREAK: 16
 // proc.c
@@ -177,12 +179,12 @@ void            uartputc(int);
 void            seginit(void);
 void            kvmalloc(void);
 pde_t*          setupkvm(void);
-void            sharevm(pde_t *pgdir,int idx,uint nshared);
+void            sharevm(pde_t *pgdir,int idx);
 char*           uva2ka(pde_t*, char*);
 void            desharevm(int);
-int             allocuvm(pde_t*, uint, uint, uint);
+int             allocuvm(pde_t*, uint, uint);
 int             deallocuvm(pde_t*, uint, uint);
-void            freevm(pde_t*,uint);
+void            freevm(pde_t*);
 void            inituvm(pde_t*, char*, uint);
 int             loaduvm(pde_t*, char*, struct inode*, uint, uint);
 pde_t*          copyuvm(pde_t*, uint);

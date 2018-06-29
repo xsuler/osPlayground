@@ -26,8 +26,11 @@ int uptime(void);
 int trace(void);
 int getsharem(int idx);
 int releasesharem(int idx);
-int split(int d);
-int memo(char* d);
+int split(int);
+int memo(void);
+int getmemo(char*);
+int setmemo(void);
+int att(int);
 
 // ulib.c
 int stat(char*, struct stat*);

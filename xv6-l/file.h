@@ -1,3 +1,4 @@
+
 struct file {
   enum { FD_NONE, FD_PIPE, FD_MEMO, FD_INODE } type;
   int ref; // reference count
@@ -5,7 +6,6 @@ struct file {
   char writable;
   struct pipe *pipe;
   struct inode *ip;
-  char* memo;
   uint off;
 };
 

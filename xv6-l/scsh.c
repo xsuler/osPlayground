@@ -101,7 +101,7 @@ void storeexp(struct sexp **st, struct sexp *exp) {
 
 void defunc(struct list *lst) {
   int i;
-  struct shared *sh = (struct shared *)getsharem(0);
+  struct shared *sh = (struct shared *)getsharem(1);
   struct func *fn = &sh->funcs[sh->nfunc];
   struct list *argv = (struct list *)lst->sexps[2];
   sh->nfunc++;
@@ -115,6 +115,17 @@ void defunc(struct list *lst) {
 
   for (i = 0; i < fn->argc; i++)
     strcpy(fn->argv[i], ((struct atom *)argv->sexps[i])->symbol);
+}
+int
+fromint(const char *v, uint n)
+{
+  int s=0,i;
+  for(i=0;i<n;i++)
+  {
+    s*=10;
+    s+=v[i]-'0';
+  }
+  return s;
 }
 
 // Execute exp.  Never returns.
@@ -146,17 +157,25 @@ void runexp(struct sexp *exp) {
     argv[lst->length] = 0;
     for (i = 0; i < lst->length; i++) {
       if (lst->sexps[i]->type == ATOM)
+      {
         argv[i] = ((struct atom *)lst->sexps[i])->symbol;
+      }
       else if (lst->sexps[i]->type == LIST)
+      {
         panic("syntax error");
+      }
       else if (lst->sexps[i]->type == APPLY) {
+        close(1);
+        memo();
         if (fork1() == 0) {
-          getsharem(0);
-          memo(xargv[i]);
+          getsharem(1);
           runexp(lst->sexps[i]);
+          exit();
         }
         wait();
-
+        close(1);
+        open("console", O_RDWR);
+        getmemo(xargv[i]);
         argv[i] = xargv[i];
       }
       if ((i == 0) && (strcmp(argv[0], "defun") == 0)) {
@@ -168,12 +187,132 @@ void runexp(struct sexp *exp) {
         wait();
         break;
       }
+      if ((i == 0) && (strcmp(argv[0], "if") == 0)) {
+        struct atom* t=(struct atom*)lst->sexps[1];
+        if(strcmp(t->symbol, ":true")==0)
+        {
+          if(fork1()==0)
+          {
+            getsharem(1);
+            runexp(lst->sexps[2]);
+          }
+          wait();
+        }
+        else{
+          if(fork1()==0)
+          {
+            getsharem(1);
+            runexp(lst->sexps[3]);
+          }
+          wait();
+        }
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "equal") == 0)) {
+        struct atom* t=(struct atom*)lst->sexps[1];
+        struct atom* r=(struct atom*)lst->sexps[2];
+        int m=fromint(t->symbol,t->esymbol-t->symbol);
+        int n=fromint(r->symbol,r->esymbol-r->symbol);
+        if(m-n==0)
+          printf(2, ":true");
+        else
+          printf(2, ":false");
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "minus") == 0)) {
+        struct atom* t=(struct atom*)lst->sexps[1];
+        struct atom* r=(struct atom*)lst->sexps[2];
+        int m=fromint(t->symbol,t->esymbol-t->symbol);
+        int n=fromint(r->symbol,r->esymbol-r->symbol);
+        printf(1,"%d", m-n);
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "repeat") == 0)) {
+        struct atom* t=(struct atom*)lst->sexps[1];
+        int n=fromint(t->symbol,t->esymbol-t->symbol);
+        while(n-->0)
+        {
+          if (fork1() == 0) {
+            getsharem(1);
+            runexp(lst->sexps[2]);
+          }
+          wait();
+        }
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "pend") == 0)) {
+        if(fork1()==0)
+        {
+          getsharem(1);
+          runexp(lst->sexps[1]);
+        }
+        wait();
+        if(fork1()==0)
+        {
+          getsharem(1);
+          runexp(lst->sexps[2]);
+        }
+        wait();
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "con") == 0)) {
+        if(fork1()==0)
+        {
+          getsharem(1);
+          runexp(lst->sexps[1]);
+        }
+        if(fork1()==0)
+        {
+          getsharem(1);
+          runexp(lst->sexps[2]);
+        }
+        wait();
+        wait();
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "clk") == 0)) {
+        int tm=att(1);
+        if(fork1()==0)
+        {
+          getsharem(1);
+          runexp(lst->sexps[1]);
+        }
+        wait();
+        tm=att(0)-tm;
+        printf(1, "%d", tm);
+        break;
+      }
+      if ((i == 0) && (strcmp(argv[0], "pipe") == 0)) {
+        int p[2];
+        if(pipe(p) < 0)
+          panic("pipe");
+        if(fork1() == 0){
+          close(1);
+          dup(p[1]);
+          close(p[0]);
+          close(p[1]);
+          getsharem(1);
+          runexp(lst->sexps[2]);
+        }
+        if(fork1() == 0){
+          close(0);
+          dup(p[0]);
+          close(p[0]);
+          close(p[1]);
+          getsharem(1);
+          runexp(lst->sexps[1]);
+        }
+        close(p[0]);
+        close(p[1]);
+        wait();
+        wait();
+        break;
+      }
       if (i == lst->length - 1) {
         int j, k, flg = 0;
-        struct shared *sh = (struct shared *)getsharem(0);
+        struct shared *sh = (struct shared *)getsharem(1);
         for (j = 0; j < MAXFUNC; j++) {
           if (strcmp(argv[0], sh->funcs[j].name) == 0) {
-
             argv[sh->funcs[j].argc+1] = 0;
             for (k = 0; k < MAXARGS; k++) {
               if (argv[k] == 0)
@@ -190,13 +329,13 @@ void runexp(struct sexp *exp) {
           }
         }
         if (fork1() == 0) {
+          getsharem(1);
           if (argv[0] == 0)
             exit();
           if (flg == 1) {
-            struct shared *sh = (struct shared *)getsharem(0);
+            struct shared *sh = (struct shared *)getsharem(1);
             runexp(sh->funcs[j].sexp);
           } else {
-            getsharem(0);
             int j;
             for (j = 0; j < MAXARGS; j++) {
               if (argv[j] == 0)
@@ -215,7 +354,6 @@ void runexp(struct sexp *exp) {
     }
     break;
   }
-
   exit();
 }
 
@@ -232,10 +370,9 @@ int getcmd(char *buf, int nbuf) {
 int main(void) {
   static char buf[100];
   int fd = 0;
-  struct shared *sh = (struct shared *)getsharem(0);
+  struct shared *sh = (struct shared *)getsharem(1);
   sh->nfunc = 0;
   sh->top = (char *)sh + sizeof(struct shared);
-  split(-2);
 
   // Ensure that three file descriptors are open.
   while ((fd = open("console", O_RDWR)) >= 0) {
@@ -255,7 +392,7 @@ int main(void) {
       continue;
     }
     if (fork1() == 0) {
-      getsharem(0);
+      getsharem(1);
       runexp(parseexp(buf));
     }
     wait();
@@ -286,6 +423,7 @@ struct sexp *atom(void) {
 
   exp = malloc(sizeof(*exp));
   memset(exp, 0, sizeof(*exp));
+
   return (struct sexp *)exp;
 }
 
@@ -344,8 +482,7 @@ struct sexp *parselist(char **ps, char *es) {
     panic("syntax error");
 
   for (i = 0; i < MAXARGS && (*ps) < res; i++) {
-    lst->sexps[i] = parsesexp(ps, res);
-  }
+    lst->sexps[i] = parsesexp(ps, res);}
   lst->length = i;
 
   return ret;

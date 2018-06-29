@@ -10,6 +10,12 @@
 
 #define PIPESIZE 512
 
+struct memo {
+  struct spinlock lock;
+  int lmemo;
+  char memo[MEMOSIZE];
+};
+
 struct pipe {
   struct spinlock lock;
   char data[PIPESIZE];
@@ -18,6 +24,18 @@ struct pipe {
   int readopen;   // read fd is still open
   int writeopen;  // write fd is still open
 };
+
+int
+memowrite(char* addr, int n)
+{
+  struct memo* ch=(struct memo*)getshared(2);
+  acquire(&ch->lock);
+  strncpy(ch->memo+ch->lmemo, addr, n);
+  ch->lmemo+=n;
+  ch->memo[ch->lmemo]=0;
+  release(&ch->lock);
+  return 0;
+}
 
 int
 pipealloc(struct file **f0, struct file **f1)

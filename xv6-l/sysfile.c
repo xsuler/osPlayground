@@ -16,6 +16,13 @@
 #include "file.h"
 #include "fcntl.h"
 
+struct memo {
+  struct spinlock lock;
+  int lmemo;
+  char memo[MEMOSIZE];
+};
+
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -284,23 +291,57 @@ create(char *path, short type, short major, short minor)
 }
 
 int
+sys_setmemo(void)
+{
+  int i;
+  struct proc* cur=myproc();
+  for(i=1;i<MAXSHAREDPG;i++)
+  {
+    if(cur->sharedrec[i]!=0)
+    {
+      getshared(i);
+    }
+  }
+  return 0;
+}
+
+int
+sys_getmemo(void)
+{
+  char *path;
+  int n;
+  if(argstr(0, &path) < 0)
+    return -1;
+  struct memo* ch=(struct memo*)getshared(2);
+  acquire(&ch->lock);
+  strncpy(path, ch->memo, ch->lmemo);
+  n=ch->lmemo;
+  release(&ch->lock);
+  path[n]=0;
+  return n;
+}
+
+int
 sys_memo(void)
 {
-  char *memo;
   struct file *f;
+  int fd;
 
-  if(argstr(0, &memo) < 0 )
-    return -1;
-
-  if((f = filealloc()) == 0){
+  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)
       fileclose(f);
     return -1;
   }
-
   f->type = FD_MEMO;
   f->off = 0;
-  return 0;
+  f->readable = 1;
+  f->writable = 1;
+  struct memo* ch=(struct memo*)getshared(2);
+  initlock(&ch->lock,"memo");
+  acquire(&ch->lock);
+  ch->lmemo=0;
+  release(&ch->lock);
+  return fd;
 }
 
 int

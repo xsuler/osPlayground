@@ -65,6 +65,7 @@ fileclose(struct file *f)
     release(&ftable.lock);
     return;
   }
+
   ff = *f;
   f->ref = 0;
   f->type = FD_NONE;
@@ -124,8 +125,7 @@ filewrite(struct file *f, char *addr, int n)
   if(f->type == FD_PIPE)
     return pipewrite(f->pipe, addr, n);
   if(f->type == FD_MEMO){
-    safestrcpy(f->memo, addr, n);
-    f->memo[n]=0;
+    memowrite(addr,n);
     return n;
   }
   if(f->type == FD_INODE){

@@ -159,10 +159,10 @@ mkfs: mkfs.c fs.h
 .PRECIOUS: %.o
 
 UPROGS=\
-	_split\
 	_scsh\
 	_trace\
 	_cat\
+  _split\
 	_pecho\
 	_echo\
 	_forktest\

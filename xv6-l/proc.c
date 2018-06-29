@@ -7,7 +7,6 @@
 #include "proc.h"
 #include "spinlock.h"
 
-
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -137,7 +136,8 @@ found:
 
   //brand new
   p->priority=NPROCQ-1;
-  p->wdidx=0;
+  p->widx=0;
+  cli();
 
   return p;
 }
@@ -204,15 +204,13 @@ getshared(uint idx)
   struct proc *curproc = myproc();
 
   if(curproc->sharedrec[idx]=='s'){
-    return curproc->sharedvm[idx];
+    return (char*)KERNBASE-(idx+1)*PGSIZE;
   }
 
-  sharevm(curproc->pgdir, idx, curproc->nshared);
-  curproc->nshared++;
-  curproc->sharedvm[idx]=(char*)KERNBASE-(curproc->nshared)*PGSIZE;
+  sharevm(curproc->pgdir, idx);
   curproc->sharedrec[idx]='s';
   switchuvm(curproc);
-  return curproc->sharedvm[idx];
+  return (char*)KERNBASE-(idx+1)*PGSIZE;
 }
 
 // Grow current process's memory by n bytes.
@@ -226,7 +224,7 @@ growproc(int n)
 
   sz = curproc->sz;
   if(n > 0){
-    if((sz = allocuvm(curproc->pgdir, sz, sz + n,curproc->nshared)) == 0)
+    if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
       return -1;
   } else if(n < 0){
     if((sz = deallocuvm(curproc->pgdir, sz, sz + n)) == 0)
@@ -283,13 +281,12 @@ fork(void)
   //brand new
   qpush(np);
 
-  for(i=0;i<MAXSHAREDPG;i++)
+  for(i=1;i<MAXSHAREDPG;i++)
   {
     np->sharedrec[i]=0;
   }
-  np->nshared=0;
-  np->wdidx=curproc->wdidx;
 
+  cli();
   release(&ptable.lock);
 
   return pid;
@@ -320,6 +317,7 @@ exit(void)
   iput(curproc->cwd);
   end_op();
   curproc->cwd = 0;
+  cli();
 
   acquire(&ptable.lock);
 
@@ -340,7 +338,6 @@ exit(void)
   sched();
   panic("zombie exit");
 }
-
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
@@ -349,7 +346,7 @@ wait(void)
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-  
+
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -363,7 +360,7 @@ wait(void)
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir,curproc->nshared);
+        freevm(p->pgdir);
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -392,7 +389,42 @@ wait(void)
 //  - choose a process to run
 //  - swtch to start running that process
 //  - eventually that process transfers control
-//      via swtch back to the scheduler.
+
+void
+schedulerR(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+
+  }
+}
 void
 scheduler(void)
 {

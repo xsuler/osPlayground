@@ -109,6 +109,9 @@ extern int sys_getsharem(void);
 extern int sys_releasesharem(void);
 extern int sys_split(void);
 extern int sys_memo(void);
+extern int sys_getmemo(void);
+extern int sys_setmemo(void);
+extern int sys_att(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -138,6 +141,9 @@ static int (*syscalls[])(void) = {
 [SYS_releasesharem]  sys_releasesharem,
 [SYS_split]  sys_split,
 [SYS_memo]  sys_memo,
+[SYS_getmemo]  sys_getmemo,
+[SYS_setmemo]  sys_setmemo,
+[SYS_att]  sys_att,
 };
 
 void
